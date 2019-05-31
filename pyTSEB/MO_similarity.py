@@ -46,6 +46,7 @@ Stability correction functions
 
 """
 
+from numba import njit
 import numpy as np
 
 import pyTSEB.meteo_utils as met
@@ -59,6 +60,7 @@ k = 0.4
 gravity = 9.8
 
 
+@njit
 def calc_L(ustar, T_A_K, rho, c_p, H, LE):
     '''Calculates the Monin-Obukhov length.
 
@@ -87,10 +89,7 @@ def calc_L(ustar, T_A_K, rho, c_p, H, LE):
     .. [Brutsaert2005] Brutsaert, W. (2005). Hydrology: an introduction (Vol. 61, No. 8).
         Cambridge: Cambridge University Press.'''
 
-    # Convert input scalars to numpy arrays
-    ustar, T_A_K, rho, c_p, H, LE = map(
-        np.asarray, (ustar, T_A_K, rho, c_p, H, LE))
-    # first convert latent heat into rate of surface evaporation (kg m-2 s-1)
+    # First convert latent heat into rate of surface evaporation (kg m-2 s-1)
     Lambda = met.calc_lambda(T_A_K)  # in J kg-1
     E = LE / Lambda
     del LE, Lambda
@@ -98,13 +97,14 @@ def calc_L(ustar, T_A_K, rho, c_p, H, LE):
     Hv = H + (0.61 * T_A_K * c_p * E)
     del H, E
 
-    L = np.asarray(np.ones(ustar.shape) * float('inf'))
+    L = np.full(ustar.shape, np.inf)
     i = Hv != 0
-    L_const = np.asarray(k * gravity / T_A_K)
+    L_const = k * gravity / T_A_K
     L[i] = -ustar[i]**3 / (L_const[i] * (Hv[i] / (rho[i] * c_p[i])))
-    return np.asarray(L)
+    return L
 
 
+@njit
 def calc_Psi_H(zoL):
     ''' Calculates the adiabatic correction factor for heat transport.
 
@@ -124,8 +124,6 @@ def calc_Psi_H(zoL):
         Cambridge: Cambridge University Press.
     '''
 
-    # Convert input scalars to numpy array
-    zoL = np.asarray(zoL)
     Psi_H = np.zeros(zoL.shape)
 
     # for stable and netural (zoL = 0 -> Psi_H = 0) conditions
@@ -142,9 +140,10 @@ def calc_Psi_H(zoL):
     d = 0.057
     n = 0.78
     Psi_H[i] = ((1.0 - d) / n) * np.log((c + y**n) / c)
-    return np.asarray(Psi_H)
+    return Psi_H
 
 
+@njit
 def calc_Psi_M(zoL):
     ''' Adiabatic correction factor for momentum transport.
 
@@ -164,9 +163,6 @@ def calc_Psi_M(zoL):
         Cambridge: Cambridge University Press.
     '''
 
-    # Convert input scalars to numpy array
-    zoL = np.asarray(zoL)
-
     Psi_M = np.zeros(zoL.shape)
     # for stable and netural (zoL = 0 -> Psi_M = 0) conditions
     i = zoL >= 0.0
@@ -179,14 +175,14 @@ def calc_Psi_M(zoL):
     del zoL
     a = 0.33
     b = 0.41
-    x = np.asarray((y / a)**0.333333)
+    x = (y / a)**0.333333
     Psi_0 = -np.log(a) + 3**0.5 * b * a**0.333333 * np.pi / 6.0
     y = np.minimum(y, b**-3)
     Psi_M[i] = (np.log(a + y) - 3.0 * b * y**0.333333
                 + (b * a**0.333333) / 2.0 * np.log((1.0 + x)**2 / (1.0 - x + x**2))
                 + 3.0**0.5 * b * a**0.333333 * np.arctan((2.0 * x - 1.0) / 3**0.5)
                 + Psi_0)
-    return np.asarray(Psi_M)
+    return Psi_M
 
 
 def calc_richardson(u, z_u, d_0, T_R0, T_R1, T_A0, T_A1):
@@ -231,6 +227,7 @@ def calc_richardson(u, z_u, d_0, T_R0, T_R1, T_A0, T_A1):
     return np.asarray(Ri)
 
 
+@njit
 def calc_u_star(u, z_u, L, d_0, z_0M):
     '''Friction velocity.
 
@@ -253,13 +250,10 @@ def calc_u_star(u, z_u, L, d_0, z_0M):
         Cambridge: Cambridge University Press.
     '''
 
-    # Covert input scalars to numpy arrays
-    u, z_u, L, d_0, z_0M = map(np.asarray, (u, z_u, L, d_0, z_0M))
-
     # calculate correction factors in other conditions
     L[L == 0.0] = 1e-36
     Psi_M = calc_Psi_M((z_u - d_0) / L)
     Psi_M0 = calc_Psi_M(z_0M / L)
     del L
     u_star = u * k / (np.log((z_u - d_0) / z_0M) - Psi_M + Psi_M0)
-    return np.asarray(u_star)
+    return u_star

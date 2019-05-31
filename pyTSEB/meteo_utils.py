@@ -43,6 +43,7 @@ PACKAGE CONTENTS
 * :func:`flux_2_evaporation` Evaporation rate.
 '''
 
+from numba import njit
 import numpy as np
 
 # ==============================================================================
@@ -91,6 +92,7 @@ def calc_c_p(p, ea):
     return np.asarray(c_p)
 
 
+@njit
 def calc_lambda(T_A_K):
     '''Calculates the latent heat of vaporization.
 
@@ -109,7 +111,7 @@ def calc_lambda(T_A_K):
     based on Eq. 3-1 Allen FAO98 '''
 
     Lambda = 1e6 * (2.501 - (2.361e-3 * (T_A_K - 273.15)))
-    return np.asarray(Lambda)
+    return Lambda
 
 
 def calc_pressure(z):
@@ -176,6 +178,7 @@ def calc_rho(p, ea, T_A_K):
     return np.asarray(rho)
 
 
+@njit
 def calc_stephan_boltzmann(T_K):
     '''Calculates the total energy radiated by a blackbody.
 
@@ -190,7 +193,7 @@ def calc_stephan_boltzmann(T_K):
         Emitted radiance (W m-2)'''
 
     M = sb * T_K**4
-    return np.asarray(M)
+    return M
 
 
 def calc_theta_s(xlat, xlong, stdlng, doy, year, ftime):

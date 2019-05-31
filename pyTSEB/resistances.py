@@ -59,6 +59,7 @@ Estimation of roughness
 
 from math import pi
 
+from numba import njit
 import numpy as np
 
 import pyTSEB.MO_similarity as MO
@@ -236,6 +237,7 @@ def calc_roughness(LAI, h_C, w_C=1, landcover=CROP, f_c=None):
     return np.asarray(z_0M), np.asarray(d)
 
 
+@njit
 def calc_R_A(z_T, ustar, L, d_0, z_0H):
     ''' Estimates the aerodynamic resistance to heat transport based on the
     MO similarity theory.
@@ -268,9 +270,7 @@ def calc_R_A(z_T, ustar, L, d_0, z_0H):
         Pages 263-293, http://dx.doi.org/10.1016/0168-1923(95)02265-Y.
     '''
 
-    # Convert input scalars to numpy arrays
-    z_T, ustar, L, d_0, z_0H = map(np.asarray, (z_T, ustar, L, d_0, z_0H))
-    R_A_log = np.asarray(np.log((z_T - d_0) / z_0H))
+    R_A_log = np.log((z_T - d_0) / z_0H)
 
     # if L -> infinity, z./L-> 0 and there is neutral atmospheric stability
     # other atmospheric conditions
@@ -284,9 +284,9 @@ def calc_R_A(z_T, ustar, L, d_0, z_0H):
     # Psi_H_star[i] = MO.calc_Psi_H_star(z_T[i], L[i], d_0[i], z_0H[i], z_star[i])
 
     i = ustar != 0
-    R_A = np.asarray(np.ones(ustar.shape) * float('inf'))
+    R_A = np.full(ustar.shape, np.inf)
     R_A[i] = (R_A_log[i] - Psi_H[i] + Psi_H0[i]) / (ustar[i] * k)
-    return np.asarray(R_A)
+    return R_A
 
 
 def calc_R_S_Choudhury(u_star, h_C, z_0M, d_0, zm, z0_soil=0.01, alpha_k=2.0):
@@ -468,7 +468,8 @@ def calc_R_S_McNaughton(u_friction):
     return np.asarray(R_S)
 
 
-def calc_R_S_Kustas(u_S, deltaT, params=None):
+#@jit(nopython=True)
+def calc_R_S_Kustas(u_S, deltaT, params={}):
     """ Aerodynamic resistance at the  soil boundary layer.
 
     Estimates the aerodynamic resistance at the  soil boundary layer based on the
@@ -494,9 +495,6 @@ def calc_R_S_Kustas(u_S, deltaT, params=None):
         Pages 13-29, http://dx.doi.org/10.1016/S0168-1923(99)00005-2.
     """
 
-    if params is None:
-        params = {}
-
     # Set model parameters
     if "KN_b" in params:
         b = params["KN_b"]
@@ -507,12 +505,9 @@ def calc_R_S_Kustas(u_S, deltaT, params=None):
     else:
         c = KN_c
 
-    # Convert input scalars to numpy arrays
-    u_S, deltaT = map(np.asarray, (u_S, deltaT))
-
-    deltaT = np.asarray(np.maximum(deltaT, 0.0))
+    deltaT = np.maximum(deltaT, 0.0)
     R_S = 1.0 / (c * deltaT**(1.0 / 3.0) + b * u_S)
-    return np.asarray(R_S)
+    return R_S
 
 
 def calc_R_x_Choudhury(u_C, F, leaf_width, alpha_prime=3.0):

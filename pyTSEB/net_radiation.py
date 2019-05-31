@@ -39,16 +39,17 @@ PACKAGE CONTENTS
 '''
 
 import numpy as np
+from numba import njit
 
 import pyTSEB.meteo_utils as met
 
 
 TAUD_STEP_SIZE_DEG = 5
 
-
+@njit
 def _calc_taud(x_lad, lai):
 
-    taud = 0
+    taud = np.zeros(lai.shape)
     for angle in range(0, 90, TAUD_STEP_SIZE_DEG):
         angle = np.radians(angle)
         akd = calc_K_be_Campbell(angle, x_lad, radians=True)
@@ -195,6 +196,7 @@ def calc_longwave_irradiance(ea, t_a_k, p=1013.25, z_T=2.0):
     return np.asarray(L_dn)
 
 
+@njit
 def calc_K_be_Campbell(theta, x_lad=1, radians=False):
     ''' Beam extinction coefficient
 
@@ -236,7 +238,9 @@ def calc_K_be_Campbell(theta, x_lad=1, radians=False):
     return K_be
 
 
+@njit
 def calc_L_n_Kustas(T_C, T_S, L_dn, lai, emisVeg, emisGrd, x_LAD=1):
+
     ''' Net longwave radiation for soil and canopy layers
 
     Estimates the net longwave radiation for soil and canopy layers unisg based on equation 2a
@@ -292,9 +296,10 @@ def calc_L_n_Kustas(T_C, T_S, L_dn, lai, emisVeg, emisGrd, x_LAD=1):
     # calculate net longwave radiation divergence of the soil
     L_nS = taudl * L_dn + (1.0 - taudl) * L_C - L_S
     L_nC = (1.0 - taudl) * (L_dn + L_S - 2.0 * L_C)
-    return np.asarray(L_nC), np.asarray(L_nS)
+    return L_nC, L_nS
 
 
+@njit
 def calc_L_n_Campbell(T_C, T_S, L_dn, lai, emisVeg, emisGrd, x_LAD=1):
     ''' Net longwave radiation for soil and canopy layers
 
@@ -349,7 +354,7 @@ def calc_L_n_Campbell(T_C, T_S, L_dn, lai, emisVeg, emisGrd, x_LAD=1):
     # calculate net longwave radiation divergence of the soil
     L_nS = emisGrd * taudl * L_dn + emisGrd * (1.0 - taudl) * L_C - L_S
     L_nC = (1 - albl) * (1.0 - taudl) * (L_dn + L_S) - 2.0 * (1.0 - taudl) * L_C
-    return np.asarray(L_nC), np.asarray(L_nS)
+    return L_nC, L_nS
 
 
 def calc_potential_irradiance_weiss(
@@ -427,6 +432,8 @@ def calc_potential_irradiance_weiss(
         np.asarray, (Rdirvis, Rdifvis, Rdirnir, Rdifnir))
     return Rdirvis, Rdifvis, Rdirnir, Rdifnir
 
+
+@njit
 def calc_spectra_Cambpell(lai, sza, rho_leaf, tau_leaf, rho_soil, x_lad=1, lai_eff=None):
     """ Canopy spectra
 

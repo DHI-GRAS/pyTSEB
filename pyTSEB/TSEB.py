@@ -77,6 +77,7 @@ Ancillary functions
 from collections import deque
 import time
 
+from numba import njit
 import numpy as np
 from pyPro4Sail.FourSAIL import FourSAIL
 
@@ -1999,6 +2000,7 @@ def calc_T_C(T_R, T_S, f_theta):
     return np.asarray(flag), np.asarray(T_C)
 
 
+@njit
 def calc_T_C_series(Tr_K, T_A_K, R_A, R_x, R_S, f_theta, H_C, rho, c_p):
     '''Estimates canopy temperature from canopy sensible heat flux and
     resistance network in series.
@@ -2048,7 +2050,7 @@ def calc_T_C_series(Tr_K, T_A_K, R_A, R_x, R_S, f_theta, H_C, rho, c_p):
                  + 4.0 * f_theta * T_C_lin**3)))
     # get canopy temperature in Kelvin
     T_C = T_C_lin + delta_T_C
-    return np.asarray(T_C)
+    return T_C
 
 
 def calc_T_CS_Norman(F, vza_n, vza_f, T_n, T_f, w_C=1, x_LAD=1, omega0=1):
@@ -2330,6 +2332,7 @@ def calc_4SAIL_emission_param(
     return rdot_star, emiss_v_eff, emiss_s_eff, gamma_sot, emiss_sot
 
 
+@njit
 def calc_T_S(T_R, T_C, f_theta):
     '''Estimates soil temperature from the directional LST.
 
@@ -2353,8 +2356,6 @@ def calc_T_S(T_R, T_C, f_theta):
     ----------
     Eq. 1 in [Norman1995]_'''
 
-    # Convert the input scalars to numpy arrays
-    T_R, T_C, f_theta = map(np.asarray, (T_R, T_C, f_theta))
     T_temp = T_R**4 - f_theta * T_C**4
     T_S = np.zeros(T_R.shape)
     flag = np.zeros(T_R.shape) + F_ALL_FLUXES
@@ -2367,7 +2368,7 @@ def calc_T_S(T_R, T_C, f_theta):
     T_S[np.logical_or(T_temp < 0, np.isnan(T_temp))] = 1e-6
     flag[np.logical_or(T_temp < 0, np.isnan(T_temp))] = F_INVALID
 
-    return np.asarray(flag), np.asarray(T_S)
+    return flag, T_S
 
 
 def calc_T_S_4SAIL(T_R, T_C, rdot_star, emiss_v_eff, emiss_s_eff, L_dn=0):

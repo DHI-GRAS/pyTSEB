@@ -19,6 +19,7 @@ Wind profile functions
 * :func:`calc_A_Goudriaan` [Goudriaan1977]_ wind attenuation coefficient below the canopy.
 """
 
+from numba import njit
 import numpy as np
 
 import pyTSEB.MO_similarity as MO  
@@ -67,6 +68,7 @@ def calc_u_C(u_friction, h_C, d_0, z_0M):
     return np.asarray(u_C)
 
 
+@njit
 def calc_u_C_star(u_friction, h_C, d_0, z_0M, L=float('inf')):
     ''' MOST wind speed at the canopy
 
@@ -94,9 +96,10 @@ def calc_u_C_star(u_friction, h_C, d_0, z_0M, L=float('inf')):
 
     # calcualte u_C, wind speed at the top of (or above) the canopy
     u_C = (u_friction * (np.log((h_C - d_0) / z_0M) - Psi_M + Psi_M0)) / KARMAN
-    return np.asarray(u_C)
+    return u_C
 
 
+@njit
 def calc_u_Goudriaan(u_C, h_C, LAI, leaf_width, z):
     '''Estimates the wind speed at a given height below the canopy.
 
@@ -132,9 +135,10 @@ def calc_u_Goudriaan(u_C, h_C, LAI, leaf_width, z):
     a = calc_A_Goudriaan(h_C, LAI, leaf_width)
     del LAI, leaf_width
     u_z = u_C * np.exp(-a * (1.0 - (z / h_C)))  # Eq. 4.48 in Goudriaan 1977
-    return np.asarray(u_z)
+    return u_z
 
 
+@njit
 def calc_A_Goudriaan(h_C, LAI, leaf_width):
     ''' Estimates the extinction coefficient factor for wind speed
 
@@ -161,4 +165,4 @@ def calc_A_Goudriaan(h_C, LAI, leaf_width):
     k3_prime = 0.28
     a = k3_prime * LAI**(2. / 3.) * h_C**(1. / 3.) * leaf_width**(-1. / 3.)
 
-    return np.asarray(a)
+    return a
