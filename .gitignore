@@ -79,5 +79,3 @@ Output/
 #Ipython Notebook
 .ipynb_checkpoints
 
-# VS Code
-.vscode/

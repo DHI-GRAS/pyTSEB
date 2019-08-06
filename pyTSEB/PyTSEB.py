@@ -63,13 +63,10 @@ Parsing directly a configuration file
 -------------------------------------
 You can also parse direcly into TSEB a configuration file previouly created.
 
->>> # Import Configuration File TSEB interface
->>> from TSEB_ConfigFile_Interface import TSEB_ConfigFile_Interface
->>> tseb = TSEB_ConfigFile_Interface()
->>> # Read the data from the configuration file into a python dictionary
->>> configData = tseb.parseInputConfig(configFile, isImage=True)
->>> tseb.GetDataTSEB(configData, isImage=True)
->>> # Parse the data from the dictionary to TSEB
+>>> from TSEB_ConfigFile_Interface import TSEB_ConfigFile_Interface # Import Configuration File TSEB interface
+>>> tseb=TSEB_ConfigFile_Interface()
+>>> configData=tseb.parseInputConfig(configFile,isImage=True) # Read the data from the configuration file into a python dictionary
+>>> tseb.GetDataTSEB(configData,isImage=True) # Parse the data from the dictionary to TSEB
 >>> tseb.RunTSEB(isImage=True)
 
 see the guidelines for input and configuration file preparation in :doc:`README_Notebooks`.
@@ -91,6 +88,7 @@ import pyTSEB.meteo_utils as met
 import pyTSEB.net_radiation as rad
 import pyTSEB.resistances as res
 import pyTSEB.clumping_index as CI
+import pyTSEB.energy_combination_ET as pet
 
 from pyTSEB import dis_TSEB
 
@@ -111,6 +109,8 @@ class PyTSEB(object):
         self.resistance_form = self.p['resistance_form']
         self.res_params = {}
         self.G_form = self.p['G_form']
+        self.water_stress = self.p['water_stress']
+        self.calc_daily_ET = False
 
     def process_local_image(self):
         ''' Prepare input data and calculate energy fluxes for all the pixel in an image.
@@ -156,7 +156,7 @@ class PyTSEB(object):
                 elif self.subset[3] <= 0 or self.subset[2] <= 0:
                     print("ERROR: Requested subset does not intersect the data extent.")
                     return
-				else:
+                else:
                     dims = (self.subset[3], self.subset[2])
         except KeyError:
             print('Error reading ' + input_fields[field])
@@ -190,6 +190,10 @@ class PyTSEB(object):
                     # Set the time in the G_form flag to compute the Santanello and
                     # Friedl G
                     self.G_form[1] = in_data['time']
+            elif field == 'S_dn_24':
+                success, in_data[field] = self._set_param_array(field, dims)
+                if success:
+                    self.calc_daily_ET = True
             else:
                 # Model specific fields which might need special treatment
                 success, inputs = self._set_special_model_input(field, dims)
@@ -235,7 +239,7 @@ class PyTSEB(object):
                 elif field == "input_mask":
                     print("Please set input_mask=0 for processing the whole image.")
                     return
-                elif field in ["alt", "lat", "lon", "stdlon", "DOY", "time"]:
+                elif field in ["alt", "lat", "lon", "stdlon", "DOY", "time", 'S_dn_24']:
                     pass
                 else:
                     print('ERROR: file read {}'.format(field))
@@ -262,16 +266,15 @@ class PyTSEB(object):
         if not exists(outdir):
             mkdir(outdir)
         self.write_raster_output(self.p['output_file'], out_data, primary_fields)
-        out_base, out_ext = splitext(self.p['output_file'])
-        outputfile = f'{out_base}_ancillary{out_ext}'
-
+        outputfile = splitext(self.p['output_file'])[0] + '_ancillary' + \
+                     splitext(self.p['output_file'])[1]
         self.write_raster_output(outputfile, out_data, ancillary_fields)
         print('Saved Files')
 
         return in_data, out_data
 
     def process_point_series_array(self):
-        """ Prepare input data and calculate energy fluxes for all the dates in point time-series.
+        ''' Prepare input data and calculate energy fluxes for all the dates in point time-series.
 
         Parameters
         ----------
@@ -283,7 +286,7 @@ class PyTSEB(object):
             All the input data coming into the model.
         out_data : dict
             All the output data coming out of the model.
-        """
+        '''
 
         def compose_date(
                 years,
@@ -296,10 +299,7 @@ class PyTSEB(object):
                 milliseconds=None,
                 microseconds=None,
                 nanoseconds=None):
-            """ Taken from
-            http://stackoverflow.com/questions/34258892/converting-year-and-day-of-year-into-datetime-index-in-pandas
-            """
-
+            ''' Taken from http://stackoverflow.com/questions/34258892/converting-year-and-day-of-year-into-datetime-index-in-pandas'''
             years = np.asarray(years) - 1970
             months = np.asarray(months) - 1
             days = np.asarray(days) - 1
@@ -609,7 +609,7 @@ class PyTSEB(object):
                                                       in_data['tau_nir_C'][i],
                                                       in_data['rho_vis_S'][i],
                                                       in_data['rho_nir_S'][i],
-                                                      x_lad=in_data['x_LAD'][i],
+                                                      x_LAD=in_data['x_LAD'][i],
                                                       LAI_eff=LAI_eff[i])
 
         # Other fluxes for vegetation
@@ -624,6 +624,49 @@ class PyTSEB(object):
         out_data['R_n1'] = out_data['R_ns1'] + out_data['R_nl1']
         out_data['delta_R_n1'] = out_data['Sn_C1'] + out_data['Ln_C1']
 
+        if self.water_stress:
+            i = np.array(np.logical_and(~noVegPixels, mask == 1))
+            [_, _, _, _, _, _, out_data['LE_0'][i], _, 
+             out_data['LE_C_0'][i], _, _, _, _, _, _, _, _, _, _] = \
+                 pet.shuttleworth_wallace(
+                              in_data['T_A1'][i],
+                              in_data['u'][i],
+                              in_data['ea'][i],
+                              in_data['p'][i],
+                              out_data['Sn_C1'][i],
+                              out_data['Sn_S1'][i],
+                              in_data['L_dn'][i],
+                              in_data['LAI'][i],
+                              in_data['h_C'][i],
+                              in_data['emis_C'][i],
+                              in_data['emis_S'][i],
+                              out_data['z_0M'][i],
+                              out_data['d_0'][i],
+                              in_data['z_u'][i],
+                              in_data['z_T'][i],
+                              f_c=in_data['f_c'][i],
+                              w_C=in_data['w_C'][i],
+                              leaf_width=in_data['leaf_width'][i],
+                              z0_soil=in_data['z0_soil'][i],
+                              x_LAD=in_data['x_LAD'][i],
+                              calcG_params=[model_params["calcG_params"][0],
+                                            model_params["calcG_params"][1][i]],
+                              resistance_form=[model_params["resistance_form"][0],
+                                               {k: model_params["resistance_form"][1][k][i]
+                                                   for k in model_params["resistance_form"][1]}],
+                              Rst_min=100,
+                              R_ss=500,
+                              environmental_factors=in_data['f_g'][i])
+
+            out_data['CWSI'][i] = 1.0 - (out_data['LE_C1'][i] / out_data['LE_C_0'][i])
+
+        
+        if self.calc_daily_ET:
+            out_data['ET_day'] = met.flux_2_evaporation(in_data['S_dn_24'] * out_data['LE1'] / in_data['S_dn'], 
+                                                        T_K=20+273.15, 
+                                                        time_domain=24)
+            
+        
         print("Finished processing!")
         return out_data
 
@@ -921,6 +964,15 @@ class PyTSEB(object):
             ('flag', S_A),  # Quality flag
             ('n_iterations', S_N)])  # Number of iterations before model converged to stable value
 
+
+        if self.calc_daily_ET:
+            output_structure['ET_day'] = S_P
+
+        if self.water_stress:
+            output_structure['LE_0'] = S_A
+            output_structure['LE_C_0'] = S_A
+            output_structure['CWSI'] = S_P
+
         return output_structure
 
     def _get_input_structure(self):
@@ -937,54 +989,56 @@ class PyTSEB(object):
         '''
 
         input_fields = OrderedDict([
-            # General parameters
-            ("T_R1", "Land Surface Temperature"),
-            ("LAI", "Leaf Area Index"),
-            ("VZA", "View Zenith Angle for LST"),
-            ("landcover", "Landcover"),
-            ("input_mask", "Input Mask"),
-            # Vegetation parameters
-            ("f_c", "Fractional Cover"),
-            ("h_C", "Canopy Height"),
-            ("w_C", "Canopy Width Ratio"),
-            ("f_g", "Green Vegetation Fraction"),
-            ("leaf_width", "Leaf Width"),
-            ("x_LAD", "Leaf Angle Distribution"),
-            ("alpha_PT", "Initial Priestley-Taylor Alpha Value"),
-            # Spectral Properties
-            ("rho_vis_C", "Leaf PAR Reflectance"),
-            ("tau_vis_C", "Leaf PAR Transmitance"),
-            ("rho_nir_C", "Leaf NIR Reflectance"),
-            ("tau_nir_C", "Leaf NIR Transmitance"),
-            ("rho_vis_S", "Soil PAR Reflectance"),
-            ("rho_nir_S", "Soil NIR Reflectance"),
-            ("emis_C", "Leaf Emissivity"),
-            ("emis_S", "Soil Emissivity"),
-            # Illumination conditions
-            ("lat", "Latitude"),
-            ("lon", "Longitude"),
-            ("stdlon", "Standard Longitude"),
-            ("time", "Observation Time for LST"),
-            ("DOY", "Observation Day Of Year for LST"),
-            ("SZA", "Sun Zenith Angle"),
-            ("SAA", "Sun Azimuth Angle"),
-            # Meteorological parameters
-            ("T_A1", "Air temperature"),
-            ("u", "Wind Speed"),
-            ("ea", "Vapour Pressure"),
-            ("alt", "Altitude"),
-            ("p", "Pressure"),
-            ("S_dn", "Shortwave Irradiance"),
-            ("z_T", "Air Temperature Height"),
-            ("z_u", "Wind Speed Height"),
-            ("z0_soil", "Soil Roughness"),
-            ("L_dn", "Longwave Irradiance"),
-            # Resistance parameters
-            ("KN_b", "Kustas and Norman Resistance Parameter b"),
-            ("KN_c", "Kustas and Norman Resistance Parameter c"),
-            ("KN_C_dash", "Kustas and Norman Resistance Parameter c-dash"),
-            # Soil heat flux parameter
-            ("G", "Soil Heat Flux Parameter")])
+                            # General parameters
+                            ("T_R1", "Land Surface Temperature"),
+                            ("LAI", "Leaf Area Index"),
+                            ("VZA", "View Zenith Angle for LST"),
+                            ("landcover", "Landcover"),
+                            ("input_mask", "Input Mask"),
+                            # Vegetation parameters
+                            ("f_c", "Fractional Cover"),
+                            ("h_C", "Canopy Height"),
+                            ("w_C", "Canopy Width Ratio"),
+                            ("f_g", "Green Vegetation Fraction"),
+                            ("leaf_width", "Leaf Width"),
+                            ("x_LAD", "Leaf Angle Distribution"),
+                            ("alpha_PT", "Initial Priestley-Taylor Alpha Value"),
+                            # Spectral Properties
+                            ("rho_vis_C", "Leaf PAR Reflectance"),
+                            ("tau_vis_C", "Leaf PAR Transmitance"),
+                            ("rho_nir_C", "Leaf NIR Reflectance"),
+                            ("tau_nir_C", "Leaf NIR Transmitance"),
+                            ("rho_vis_S", "Soil PAR Reflectance"),
+                            ("rho_nir_S", "Soil NIR Reflectance"),
+                            ("emis_C", "Leaf Emissivity"),
+                            ("emis_S", "Soil Emissivity"),
+                            # Illumination conditions
+                            ("lat", "Latitude"),
+                            ("lon", "Longitude"),
+                            ("stdlon", "Standard Longitude"),
+                            ("time", "Observation Time for LST"),
+                            ("DOY", "Observation Day Of Year for LST"),
+                            ("SZA", "Sun Zenith Angle"),
+                            ("SAA", "Sun Azimuth Angle"),
+                            # Meteorological parameters
+                            ("T_A1", "Air temperature"),
+                            ("u", "Wind Speed"),
+                            ("ea", "Vapour Pressure"),
+                            ("alt", "Altitude"),
+                            ("p", "Pressure"),
+                            ("S_dn", "Shortwave Irradiance"),
+                            ("z_T", "Air Temperature Height"),
+                            ("z_u", "Wind Speed Height"),
+                            ("z0_soil", "Soil Roughness"),
+                            ("L_dn", "Longwave Irradiance"),
+                            # Resistance parameters
+                            ("KN_b", "Kustas and Norman Resistance Parameter b"),
+                            ("KN_c", "Kustas and Norman Resistance Parameter c"),
+                            ("KN_C_dash", "Kustas and Norman Resistance Parameter c-dash"),
+                            # Soil heat flux parameter
+                            ("G", "Soil Heat Flux Parameter"),
+                            ('S_dn_24', 'Daily shortwave irradiance')])
+            
         return input_fields
 
     def _set_special_model_input(self, field, dims):
