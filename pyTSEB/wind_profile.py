@@ -68,7 +68,7 @@ def calc_u_C(u_friction, h_C, d_0, z_0M):
     return np.asarray(u_C)
 
 
-@njit
+@njit(parallel=True)
 def calc_u_C_star(u_friction, h_C, d_0, z_0M, L=float('inf')):
     ''' MOST wind speed at the canopy
 
@@ -99,7 +99,7 @@ def calc_u_C_star(u_friction, h_C, d_0, z_0M, L=float('inf')):
     return u_C
 
 
-@njit
+@njit(parallel=True)
 def calc_u_Goudriaan(u_C, h_C, LAI, leaf_width, z):
     '''Estimates the wind speed at a given height below the canopy.
 
@@ -133,12 +133,11 @@ def calc_u_Goudriaan(u_C, h_C, LAI, leaf_width, z):
 
     # extinction factor for wind speed
     a = calc_A_Goudriaan(h_C, LAI, leaf_width)
-    del LAI, leaf_width
     u_z = u_C * np.exp(-a * (1.0 - (z / h_C)))  # Eq. 4.48 in Goudriaan 1977
     return u_z
 
 
-@njit
+@njit(parallel=True)
 def calc_A_Goudriaan(h_C, LAI, leaf_width):
     ''' Estimates the extinction coefficient factor for wind speed
 

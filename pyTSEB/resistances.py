@@ -237,7 +237,7 @@ def calc_roughness(LAI, h_C, w_C=1, landcover=CROP, f_c=None):
     return np.asarray(z_0M), np.asarray(d)
 
 
-@njit
+@njit(parallel=True)
 def calc_R_A(z_T, ustar, L, d_0, z_0H):
     ''' Estimates the aerodynamic resistance to heat transport based on the
     MO similarity theory.
@@ -277,8 +277,6 @@ def calc_R_A(z_T, ustar, L, d_0, z_0H):
     L[L == 0] = 1e-36
     Psi_H = MO.calc_Psi_H((z_T - d_0) / L)
     Psi_H0 = MO.calc_Psi_H(z_0H / L)
-
-    del L, z_0H, z_T
 
     # i = np.logical_and(z_star>0, z_T<=z_star)
     # Psi_H_star[i] = MO.calc_Psi_H_star(z_T[i], L[i], d_0[i], z_0H[i], z_star[i])
@@ -468,7 +466,6 @@ def calc_R_S_McNaughton(u_friction):
     return np.asarray(R_S)
 
 
-#@jit(nopython=True)
 def calc_R_S_Kustas(u_S, deltaT, params={}):
     """ Aerodynamic resistance at the  soil boundary layer.
 

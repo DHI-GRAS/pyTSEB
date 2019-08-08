@@ -92,7 +92,7 @@ def calc_c_p(p, ea):
     return np.asarray(c_p)
 
 
-@njit
+@njit(parallel=True)
 def calc_lambda(T_A_K):
     '''Calculates the latent heat of vaporization.
 
@@ -131,6 +131,7 @@ def calc_pressure(z):
     return np.asarray(p)
 
 
+@njit(parallel=True)
 def calc_psicr(c_p, p, Lambda):
     ''' Calculates the psicrometric constant.
 
@@ -149,7 +150,7 @@ def calc_psicr(c_p, p, Lambda):
         Psicrometric constant (mb C-1).'''
 
     psicr = c_p * p / (epsilon * Lambda)
-    return np.asarray(psicr)
+    return psicr
 
 
 def calc_rho(p, ea, T_A_K):
@@ -178,7 +179,7 @@ def calc_rho(p, ea, T_A_K):
     return np.asarray(rho)
 
 
-@njit
+@njit(parallel=True)
 def calc_stephan_boltzmann(T_K):
     '''Calculates the total energy radiated by a blackbody.
 
@@ -335,6 +336,7 @@ def calc_vapor_pressure(T_K):
     return np.asarray(ea)
 
 
+@njit(parallel=True)
 def calc_delta_vapor_pressure(T_K):
     """Calculate the slope of saturation water vapour pressure.
 

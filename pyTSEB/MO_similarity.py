@@ -60,7 +60,7 @@ k = 0.4
 gravity = 9.8
 
 
-@njit
+@njit(parallel=True)
 def calc_L(ustar, T_A_K, rho, c_p, H, LE):
     '''Calculates the Monin-Obukhov length.
 
@@ -92,10 +92,9 @@ def calc_L(ustar, T_A_K, rho, c_p, H, LE):
     # First convert latent heat into rate of surface evaporation (kg m-2 s-1)
     Lambda = met.calc_lambda(T_A_K)  # in J kg-1
     E = LE / Lambda
-    del LE, Lambda
+    
     # Virtual sensible heat flux
     Hv = H + (0.61 * T_A_K * c_p * E)
-    del H, E
 
     L = np.full(ustar.shape, np.inf)
     i = Hv != 0
@@ -104,7 +103,7 @@ def calc_L(ustar, T_A_K, rho, c_p, H, LE):
     return L
 
 
-@njit
+@njit(parallel=True)
 def calc_Psi_H(zoL):
     ''' Calculates the adiabatic correction factor for heat transport.
 
@@ -135,7 +134,6 @@ def calc_Psi_H(zoL):
     # for unstable conditions
     i = zoL < 0.0
     y = -zoL[i]
-    del zoL
     c = 0.33
     d = 0.057
     n = 0.78
@@ -143,7 +141,7 @@ def calc_Psi_H(zoL):
     return Psi_H
 
 
-@njit
+@njit(parallel=True)
 def calc_Psi_M(zoL):
     ''' Adiabatic correction factor for momentum transport.
 
@@ -172,7 +170,6 @@ def calc_Psi_M(zoL):
     # for unstable conditions
     i = zoL < 0
     y = -zoL[i]
-    del zoL
     a = 0.33
     b = 0.41
     x = (y / a)**0.333333
@@ -227,7 +224,7 @@ def calc_richardson(u, z_u, d_0, T_R0, T_R1, T_A0, T_A1):
     return np.asarray(Ri)
 
 
-@njit
+@njit(parallel=True)
 def calc_u_star(u, z_u, L, d_0, z_0M):
     '''Friction velocity.
 
@@ -254,6 +251,5 @@ def calc_u_star(u, z_u, L, d_0, z_0M):
     L[L == 0.0] = 1e-36
     Psi_M = calc_Psi_M((z_u - d_0) / L)
     Psi_M0 = calc_Psi_M(z_0M / L)
-    del L
     u_star = u * k / (np.log((z_u - d_0) / z_0M) - Psi_M + Psi_M0)
     return u_star

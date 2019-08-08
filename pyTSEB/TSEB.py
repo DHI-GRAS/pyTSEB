@@ -1771,7 +1771,7 @@ def calc_H_C(T_C, T_A, R_A, rho, c_p):
     H_C = rho * c_p * (T_C - T_A) / R_A
     return np.asarray(H_C)
 
-
+@njit(parallel=True)
 def calc_H_C_PT(delta_R_ni, f_g, T_A_K, P, c_p, alpha):
     '''Calculates canopy sensible heat flux based on the Priestley and Taylor formula.
 
@@ -1809,7 +1809,7 @@ def calc_H_C_PT(delta_R_ni, f_g, T_A_K, P, c_p, alpha):
     gama = met.calc_psicr(c_p, P, Lambda)
     s_gama = s / (s + gama)
     H_C = delta_R_ni * (1.0 - alpha * f_g * s_gama)
-    return np.asarray(H_C)
+    return H_C
 
 
 def calc_H_DTD_parallel(
@@ -2000,7 +2000,7 @@ def calc_T_C(T_R, T_S, f_theta):
     return np.asarray(flag), np.asarray(T_C)
 
 
-@njit
+@njit(parallel=True)
 def calc_T_C_series(Tr_K, T_A_K, R_A, R_x, R_S, f_theta, H_C, rho, c_p):
     '''Estimates canopy temperature from canopy sensible heat flux and
     resistance network in series.

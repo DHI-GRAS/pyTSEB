@@ -46,7 +46,8 @@ import pyTSEB.meteo_utils as met
 
 TAUD_STEP_SIZE_DEG = 5
 
-@njit
+
+@njit(parallel=True)
 def _calc_taud(x_lad, lai):
 
     taud = np.zeros(lai.shape)
@@ -196,7 +197,7 @@ def calc_longwave_irradiance(ea, t_a_k, p=1013.25, z_T=2.0):
     return np.asarray(L_dn)
 
 
-@njit
+@njit(parallel=True)
 def calc_K_be_Campbell(theta, x_lad=1, radians=False):
     ''' Beam extinction coefficient
 
@@ -238,7 +239,6 @@ def calc_K_be_Campbell(theta, x_lad=1, radians=False):
     return K_be
 
 
-@njit
 def calc_L_n_Kustas(T_C, T_S, L_dn, lai, emisVeg, emisGrd, x_LAD=1):
 
     ''' Net longwave radiation for soil and canopy layers
@@ -282,12 +282,12 @@ def calc_L_n_Kustas(T_C, T_S, L_dn, lai, emisVeg, emisGrd, x_LAD=1):
 
     # Get the diffuse transmitance
     _, _, _, taudl = calc_spectra_Cambpell(lai,
-                                          np.zeros(emisVeg.shape),
-                                          1.0 - emisVeg,
-                                          np.zeros(emisVeg.shape),
-                                          1.0 - emisGrd,
-                                          x_lad=x_LAD,
-                                          lai_eff=None)
+                                           np.zeros(emisVeg.shape),
+                                           1.0 - emisVeg,
+                                           np.zeros(emisVeg.shape),
+                                           1.0 - emisGrd,
+                                           x_lad=x_LAD,
+                                           lai_eff=None)
 
     # calculate long wave emissions from canopy, soil and sky
     L_C = emisVeg * met.calc_stephan_boltzmann(T_C)
@@ -299,7 +299,6 @@ def calc_L_n_Kustas(T_C, T_S, L_dn, lai, emisVeg, emisGrd, x_LAD=1):
     return L_nC, L_nS
 
 
-@njit
 def calc_L_n_Campbell(T_C, T_S, L_dn, lai, emisVeg, emisGrd, x_LAD=1):
     ''' Net longwave radiation for soil and canopy layers
 
@@ -433,7 +432,6 @@ def calc_potential_irradiance_weiss(
     return Rdirvis, Rdifvis, Rdirnir, Rdifnir
 
 
-@njit
 def calc_spectra_Cambpell(lai, sza, rho_leaf, tau_leaf, rho_soil, x_lad=1, lai_eff=None):
     """ Canopy spectra
 
