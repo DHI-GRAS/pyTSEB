@@ -125,7 +125,7 @@ def penman_monteith(T_A_K, u, ea, p, Sn, L_dn, emis, LAI, z_0M, d_0, z_u, z_T,
           calcG_params[1], Rst_min, leaf_type], [T_A_K] * 14)
 
     # Create the output variables
-    [flag, Ln, LE, H, G, R_A, iterations] = [np.zeros(T_A_K.shape) + np.NaN for i in range(7)]
+    [flag, Ln, LE, H, G, R_A, iterations] = [np.zeros(T_A_K.shape, np.float32) + np.NaN for i in range(7)]
 
     # Calculate the general parameters
     rho_a = TSEB.met.calc_rho(p, ea, T_A_K)  # Air density
@@ -150,16 +150,16 @@ def penman_monteith(T_A_K, u, ea, p, Sn, L_dn, emis, LAI, z_0M, d_0, z_u, z_T,
     # iteration of the Monin-Obukhov length
     if const_L is None:
         # Initially assume stable atmospheric conditions and set variables for
-        L = np.asarray(np.zeros(T_A_K.shape) + np.inf)
+        L = np.asarray(np.zeros(T_A_K.shape, np.float32) + np.inf)
         max_iterations = ITERATIONS
     else:  # We force Monin-Obukhov lenght to the provided array/value
-        L = np.asarray(np.ones(T_A_K.shape) * const_L)
+        L = np.asarray(np.ones(T_A_K.shape, np.float32) * const_L)
         max_iterations = 1  # No iteration
     u_friction = TSEB.MO.calc_u_star(u, z_u, L, d_0, z_0M)
     u_friction = np.asarray(np.maximum(TSEB.u_friction_min, u_friction))
 
-    L_old = np.ones(T_A_K.shape)
-    L_diff = np.asarray(np.ones(T_A_K.shape) * np.inf)
+    L_old = np.ones(T_A_K.shape, np.float32)
+    L_diff = np.asarray(np.ones(T_A_K.shape, np.float32) * np.inf)
     z_0H = TSEB.res.calc_z_0H(z_0M, kB=kB)  # Roughness length for heat transport
 
     # Calculate Net radiation
@@ -437,7 +437,7 @@ def shuttleworth_wallace(T_A_K,
 
     # Create the output variables
     [flag, vpd_0, LE, H, LE_C, H_C, LE_S, H_S, G, R_S, R_x, R_A,
-     iterations] = [np.zeros(T_A_K.shape) + np.NaN for i in range(13)]
+     iterations] = [np.zeros(T_A_K.shape, np.float32) + np.NaN for i in range(13)]
 
     # Calculate the general parameters
     rho_a = TSEB.met.calc_rho(p, ea, T_A_K)              # Air density
@@ -464,15 +464,15 @@ def shuttleworth_wallace(T_A_K,
     # iteration of the Monin-Obukhov length
     if const_L is None:
         # Initially assume stable atmospheric conditions and set variables for
-        L = np.asarray(np.zeros(T_A_K.shape) + np.inf)
+        L = np.asarray(np.zeros(T_A_K.shape, np.float32) + np.inf)
         max_iterations = ITERATIONS
     else:  # We force Monin-Obukhov lenght to the provided array/value
-        L = np.asarray(np.ones(T_A_K.shape) * const_L)
+        L = np.asarray(np.ones(T_A_K.shape, np.float32) * const_L)
         max_iterations = 1  # No iteration
     u_friction = TSEB.MO.calc_u_star(u, z_u, L, d_0, z_0M)
     u_friction = np.asarray(np.maximum(TSEB.u_friction_min, u_friction))
     L_queue = deque([np.array(L)], 6)
-    L_converged = np.asarray(np.zeros(T_A_K.shape)).astype(bool)
+    L_converged = np.asarray(np.zeros(T_A_K.shape, np.float32)).astype(bool)
     L_diff_max = np.inf
  
     z_0H = TSEB.res.calc_z_0H(z_0M, kB=0)  # Roughness length for heat transport

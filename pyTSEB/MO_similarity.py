@@ -92,11 +92,11 @@ def calc_L(ustar, T_A_K, rho, c_p, H, LE):
     # First convert latent heat into rate of surface evaporation (kg m-2 s-1)
     Lambda = met.calc_lambda(T_A_K)  # in J kg-1
     E = LE / Lambda
-    
+
     # Virtual sensible heat flux
     Hv = H + (0.61 * T_A_K * c_p * E)
 
-    L = np.full(ustar.shape, np.inf)
+    L = np.full(ustar.shape, np.inf, np.float32)
     i = Hv != 0
     L_const = k * gravity / T_A_K
     L[i] = -ustar[i]**3 / (L_const[i] * (Hv[i] / (rho[i] * c_p[i])))
@@ -123,7 +123,7 @@ def calc_Psi_H(zoL):
         Cambridge: Cambridge University Press.
     '''
 
-    Psi_H = np.zeros(zoL.shape)
+    Psi_H = np.zeros(zoL.shape, np.float32)
 
     # for stable and netural (zoL = 0 -> Psi_H = 0) conditions
     i = zoL >= 0.0
@@ -161,7 +161,7 @@ def calc_Psi_M(zoL):
         Cambridge: Cambridge University Press.
     '''
 
-    Psi_M = np.zeros(zoL.shape)
+    Psi_M = np.zeros(zoL.shape, np.float32)
     # for stable and netural (zoL = 0 -> Psi_M = 0) conditions
     i = zoL >= 0.0
     a = 6.1

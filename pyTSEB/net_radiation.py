@@ -50,7 +50,7 @@ TAUD_STEP_SIZE_DEG = 5
 @njit(parallel=True)
 def _calc_taud(x_lad, lai):
 
-    taud = np.zeros(lai.shape)
+    taud = np.zeros(lai.shape, np.float32)
     for angle in range(0, 90, TAUD_STEP_SIZE_DEG):
         angle = np.radians(angle)
         akd = calc_K_be_Campbell(angle, x_lad, radians=True)
@@ -98,7 +98,7 @@ def calc_difuse_ratio(S_dn, sza, press=1013.25, SOLAR_CONSTANT=1320):
 
     # Convert input scalars to numpy arrays
     S_dn, sza, press = map(np.asarray, (S_dn, sza, press))
-    difvis, difnir, fvis, fnir = [np.zeros(S_dn.shape) for i in range(4)]
+    difvis, difnir, fvis, fnir = [np.zeros(S_dn.shape, np.float32) for i in range(4)]
     fvis = fvis + 0.6
     fnir = fnir + 0.4
 
@@ -282,9 +282,9 @@ def calc_L_n_Kustas(T_C, T_S, L_dn, lai, emisVeg, emisGrd, x_LAD=1):
 
     # Get the diffuse transmitance
     _, _, _, taudl = calc_spectra_Cambpell(lai,
-                                           np.zeros(emisVeg.shape),
+                                           np.zeros(emisVeg.shape, np.float32),
                                            1.0 - emisVeg,
-                                           np.zeros(emisVeg.shape),
+                                           np.zeros(emisVeg.shape, np.float32),
                                            1.0 - emisGrd,
                                            x_lad=x_LAD,
                                            lai_eff=None)
@@ -343,9 +343,9 @@ def calc_L_n_Campbell(T_C, T_S, L_dn, lai, emisVeg, emisGrd, x_LAD=1):
     L_S = emisGrd * met.calc_stephan_boltzmann(T_S)
     # Calculate the canopy spectral properties
     _, albl, _, taudl = calc_spectra_Cambpell(lai,
-                                              np.zeros(emisVeg.shape),
+                                              np.zeros(emisVeg.shape, np.float32),
                                               1.0 - emisVeg,
-                                              np.zeros(emisVeg.shape),
+                                              np.zeros(emisVeg.shape, np.float32),
                                               1.0 - emisGrd,
                                               x_lad=x_LAD,
                                               lai_eff=None)
@@ -389,7 +389,7 @@ def calc_potential_irradiance_weiss(
 
     # Set defaout ouput values
     Rdirvis, Rdifvis, Rdirnir, Rdifnir, w = [
-        np.zeros(sza.shape) for i in range(5)]
+        np.zeros(sza.shape, np.float32) for i in range(5)]
 
     coszen = np.cos(np.radians(sza))
     # Calculate potential (clear-sky) visible and NIR solar components

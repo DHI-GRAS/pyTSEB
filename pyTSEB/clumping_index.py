@@ -73,7 +73,7 @@ def calc_omega0_Kustas(LAI, f_C, x_LAD=1, isLAIeff=True):
 
     # Convert input scalars to numpy array
     LAI, f_C, x_LAD = map(np.asarray, (LAI, f_C, x_LAD))
-    theta = np.zeros(LAI.shape)
+    theta = np.zeros(LAI.shape, np.float32)
     # Estimate the beam extinction coefficient based on a ellipsoidal LAD function
     # Eq. 15.4 of Campbell and Norman (1998)
     K_be = np.sqrt(x_LAD**2 + np.tan(theta)**2) / \

@@ -310,7 +310,7 @@ def calc_sun_angles(lat, lon, stdlon, doy, ftime):
         (np.sin(declination) * np.cos(np.radians(lat))
          - np.cos(np.radians(w)) * np.cos(declination) * np.sin(np.radians(lat)))
         / np.cos(sun_elev))
-    saa = np.zeros(sza.shape)
+    saa = np.zeros(sza.shape, np.float32)
     saa[w <= 0.0] = np.degrees(np.arccos(cos_phi[w <= 0.0]))
     saa[w > 0.0] = 360. - np.degrees(np.arccos(cos_phi[w > 0.0]))
 

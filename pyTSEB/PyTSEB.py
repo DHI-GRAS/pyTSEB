@@ -171,7 +171,7 @@ class PyTSEB(object):
             elif field == "input_mask":
                 if self.p['input_mask'] == '0':
                     # Create mask from landcover array
-                    mask = np.ones(dims)
+                    mask = np.ones(dims, np.int32)
                     mask[np.logical_or.reduce((in_data['landcover'] == res.WATER,
                                                in_data['landcover'] == res.URBAN,
                                                in_data['landcover'] == res.SNOW))] = 0
@@ -385,9 +385,9 @@ class PyTSEB(object):
             if 'G' in in_data.columns:
                 self.G_form[1] = in_data['G']
             else:
-                self.G_form[1] = np.ones(dims) * self.G_form[1]
+                self.G_form[1] = np.ones(dims, np.float32) * self.G_form[1]
         elif self.G_form[0][0] == TSEB.G_RATIO:
-            self.G_form[1] = np.ones(dims) * self.G_form[1]
+            self.G_form[1] = np.ones(dims, np.float32) * self.G_form[1]
         elif self.G_form[0][0] == TSEB.G_TIME_DIFF:
             # Set the time in the G_form flag to compute the Santanello and
             # Friedl G
@@ -395,9 +395,9 @@ class PyTSEB(object):
 
         # Set the Kustas and Norman resistance parameters
         if self.resistance_form == 0:
-            self.res_params['KN_b'] = np.ones(dims) * self.p['KN_b']
-            self.res_params['KN_c'] = np.ones(dims) * self.p['KN_c']
-            self.res_params['KN_C_dash'] = np.ones(dims) * self.p['KN_C_dash']
+            self.res_params['KN_b'] = np.ones(dims, np.float32) * self.p['KN_b']
+            self.res_params['KN_c'] = np.ones(dims, np.float32) * self.p['KN_c']
+            self.res_params['KN_C_dash'] = np.ones(dims, np.float32) * self.p['KN_C_dash']
 
         # ======================================
         # Run the chosen model
@@ -519,12 +519,12 @@ class PyTSEB(object):
                         "resistance_form": [self.resistance_form, self.res_params]}
 
         if mask is None:
-            mask = np.ones(in_data['LAI'].shape)
+            mask = np.ones(in_data['LAI'].shape, np.int32)
 
         # Create the output dictionary
         out_data = dict()
         for field in self._get_output_structure():
-            out_data[field] = np.zeros(in_data['LAI'].shape) + np.NaN
+            out_data[field] = np.zeros(in_data['LAI'].shape, np.float32) + np.NaN
 
         # Esimate diffuse and direct irradiance
         difvis, difnir, fvis, fnir = rad.calc_difuse_ratio(
@@ -580,10 +580,11 @@ class PyTSEB(object):
                                f_c=in_data['f_c'][i])
 
         # Net shortwave radiation for vegetation
-        F = np.zeros(in_data['LAI'].shape)
+        F = np.zeros(in_data['LAI'].shape, np.float32)
         F[i] = in_data['LAI'][i] / in_data['f_c'][i]
         # Clumping index
-        omega0, Omega = np.zeros(in_data['LAI'].shape), np.zeros(in_data['LAI'].shape)
+        omega0 = np.zeros(in_data['LAI'].shape, np.float32)
+        Omega = np.zeros(in_data['LAI'].shape, np.float32)
         omega0[i] = CI.calc_omega0_Kustas(
             in_data['LAI'][i],
             in_data['f_c'][i],
@@ -791,7 +792,7 @@ class PyTSEB(object):
 
         # See if the parameter is a number
         try:
-            array = np.zeros(dims) + float(parameter)
+            array = np.zeros(dims, np.float32) + float(parameter)
             return success, array
         except ValueError:
             pass
@@ -804,7 +805,7 @@ class PyTSEB(object):
             return success, array
         # If it is then get the value of that parameter
         try:
-            array = np.zeros(dims) + float(inputString)
+            array = np.zeros(dims, np.float32) + float(inputString)
         except ValueError:
             try:
                 fid = gdal.Open(inputString, gdal.GA_ReadOnly)
@@ -812,9 +813,9 @@ class PyTSEB(object):
                     array = fid.GetRasterBand(band).ReadAsArray(self.subset[0],
                                                                 self.subset[1],
                                                                 self.subset[2],
-                                                                self.subset[3])
+                                                                self.subset[3]).astype(np.float32)
                 else:
-                    array = fid.GetRasterBand(band).ReadAsArray()
+                    array = fid.GetRasterBand(band).ReadAsArray().astype(np.float32)
             except AttributeError:
                 success = False
             finally:
@@ -865,7 +866,7 @@ class PyTSEB(object):
             for i, field in enumerate(fields):
                 band = ds.GetRasterBand(i + 1)
                 band.SetNoDataValue(np.NaN)
-                band.WriteArray(output[field])
+                band.WriteArray(output[field].astype(np.float32))
                 band.FlushCache()
             ds.FlushCache()
             ds = None

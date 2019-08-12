@@ -162,9 +162,9 @@ def calc_roughness(LAI, h_C, w_C=1, landcover=CROP, f_c=None):
     LAI, h_C, w_C, landcover = map(np.asarray, (LAI, h_C, w_C, landcover))
 
     # Initialize fractional cover and horizontal area index
-    lambda_ = np.zeros(LAI.shape)
+    lambda_ = np.zeros(LAI.shape, np.float32)
     if f_c is None:
-        f_c = np.zeros(LAI.shape)
+        f_c = np.zeros(LAI.shape, np.float32)
 
         # Needleleaf canopies
         mask = np.logical_or(landcover == CONIFER_E, landcover == CONIFER_D)
@@ -282,7 +282,7 @@ def calc_R_A(z_T, ustar, L, d_0, z_0H):
     # Psi_H_star[i] = MO.calc_Psi_H_star(z_T[i], L[i], d_0[i], z_0H[i], z_star[i])
 
     i = ustar != 0
-    R_A = np.full(ustar.shape, np.inf)
+    R_A = np.full(ustar.shape, np.inf, np.float32)
     R_A[i] = (R_A_log[i] - Psi_H[i] + Psi_H0[i]) / (ustar[i] * k)
     return R_A
 
@@ -673,7 +673,7 @@ def calc_stomatal_conductance_TSEB(LE_C, LE, R_A, R_x, e_a, T_A, T_C, F,
     # Convert input scalars to numpy arrays
     LE_C, LE, R_A, R_x, e_a, T_A, T_C, F, p, leaf_type, f_g, f_dry = map(
         np.asarray, (LE_C, LE, R_A, R_x, e_a, T_A, T_C, F, p, leaf_type, f_g, f_dry))
-    G_s = np.zeros(np.shape(LE_C))
+    G_s = np.zeros(np.shape(LE_C), np.float32)
 
     # Invert the bulk SW to obtain eb (vapor pressure at the canopy interface)
     rho = met.calc_rho(p, e_a, T_A)
@@ -803,8 +803,8 @@ def raupach(lambda_):
 
     # Convert input scalar to numpy array
     lambda_ = np.asarray(lambda_)
-    z0M_factor = np.zeros(lambda_.shape)
-    d_factor = np.asarray(np.zeros(lambda_.shape) + 0.65)
+    z0M_factor = np.zeros(lambda_.shape, np.float32)
+    d_factor = np.asarray(np.zeros(lambda_.shape, np.float32) + 0.65)
 
     # Calculation of the Raupach (1994) formulae
     # if lambda_ > 0.152:

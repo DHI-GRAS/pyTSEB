@@ -317,15 +317,15 @@ def TSEB_2T(T_C,
     # calcG_params[1] = None
     # Create the output variables
     [flag, T_AC, Ln_S, Ln_C, LE_C, H_C, LE_S, H_S, G, R_S, R_x,
-        R_A, iterations] = [np.zeros(T_S.shape) + np.NaN for i in range(13)]
+        R_A, iterations] = [np.zeros(T_S.shape, np.float32) + np.NaN for i in range(13)]
 
     # iteration of the Monin-Obukhov length
     if const_L is None:
         # Initially assume stable atmospheric conditions and set variables for
-        L = np.asarray(np.zeros(T_S.shape) + np.inf)
+        L = np.asarray(np.zeros(T_S.shape, np.float32) + np.inf)
         max_iterations = ITERATIONS
     else:  # We force Monin-Obukhov lenght to the provided array/value
-        L = np.asarray(np.ones(T_S.shape) * const_L)
+        L = np.asarray(np.ones(T_S.shape, np.float32) * const_L)
         max_iterations = 1  # No iteration
 
     # Calculate the general parameters
@@ -352,8 +352,8 @@ def TSEB_2T(T_C,
     # iteration of the Monin-Obukhov length
     u_friction = MO.calc_u_star(u, z_u, L, d_0, z_0M)
     u_friction = np.asarray(np.maximum(u_friction_min, u_friction))
-    L_old = np.ones(T_C.shape)
-    L_diff = np.asarray(np.ones(T_C.shape) * np.inf)
+    L_old = np.ones(T_C.shape, np.float32)
+    L_diff = np.asarray(np.ones(T_C.shape, np.float32) * np.inf)
 
     # Outer loop for estimating stability.
     # Stops when difference in consecutives L is below a given threshold
@@ -666,15 +666,15 @@ def TSEB_PT(Tr_K,
     # calcG_params[1] = None
     # Create the output variables
     [T_AC, Ln_S, Ln_C, H, LE, LE_C, H_C, LE_S, H_S, G, R_S, R_x, R_A, delta_Rn,
-     Rn_S, iterations] = [np.zeros(Tr_K.shape)+np.NaN for i in range(16)]
+     Rn_S, iterations] = [np.zeros(Tr_K.shape, np.float32) + np.NaN for i in range(16)]
 
     # iteration of the Monin-Obukhov length
     if const_L is None:
         # Initially assume stable atmospheric conditions and set variables for
-        L = np.asarray(np.zeros(Tr_K.shape) + np.inf)
+        L = np.asarray(np.zeros(Tr_K.shape, np.float32) + np.inf)
         max_iterations = ITERATIONS
     else:  # We force Monin-Obukhov lenght to the provided array/value
-        L = np.asarray(np.ones(Tr_K.shape) * const_L)
+        L = np.asarray(np.ones(Tr_K.shape, np.float32) * const_L)
         max_iterations = 1  # No iteration
     # Calculate the general parameters
     rho = met.calc_rho(p, ea, T_A_K)  # Air density
@@ -776,7 +776,7 @@ def TSEB_PT(Tr_K,
                                      f_theta[i], H_C[i], rho[i], c_p[i])
 
             # Calculate soil temperature
-            flag_t = np.zeros(flag.shape) + F_ALL_FLUXES
+            flag_t = np.zeros(flag.shape, np.int32) + F_ALL_FLUXES
             flag_t[i], T_S[i] = calc_T_S(Tr_K[i], T_C[i], f_theta[i])
             flag[flag_t == F_INVALID] = F_INVALID
             LE_S[flag_t == F_INVALID] = 0
@@ -1122,7 +1122,7 @@ def DTD(Tr_K_0,
     resistance_form = resistance_form[0]
     # Create the output variables
     [flag, T_S, T_C, T_AC, Ln_S, Ln_C, LE_C, H_C, LE_S, H_S, G, R_S, R_x,
-        R_A, H, iterations] = [np.zeros(Tr_K_1.shape) + np.NaN for i in range(16)]
+        R_A, H, iterations] = [np.zeros(Tr_K_1.shape, np.float32) + np.NaN for i in range(16)]
 
     # Calculate the general parameters
     rho = met.calc_rho(p, ea, T_A_K_1)  # Air density
@@ -1143,7 +1143,7 @@ def DTD(Tr_K_0,
         # Calculate the Richardson number
         Ri = MO.calc_richardson(u, z_u, d_0, Tr_K_0, Tr_K_1, T_A_K_0, T_A_K_1)
     else:  # We force Monin-Obukhov lenght to the provided array/value
-        Ri = np.asarray(np.ones(Tr_K_1.shape) * calc_Ri)
+        Ri = np.asarray(np.ones(Tr_K_1.shape, np.float32) * calc_Ri)
     # Use the approximation Ri ~ (z-d_0)./L from end of section 2.2 from
     # Norman et. al., 2000 (DTD paper)
     L_from_Ri = (z_u - d_0) / Ri
@@ -1178,7 +1178,7 @@ def DTD(Tr_K_0,
     del res_types
 
     # Outer loop until canopy and soil temperatures have stabilised
-    T_C_prev = np.zeros(Tr_K_1.shape)
+    T_C_prev = np.zeros(Tr_K_1.shape, np.float32)
     T_C_thres = 0.1
     T_C_diff = np.fabs(T_C - T_C_prev)
     for n_iterations in range(ITERATIONS):
@@ -1273,7 +1273,7 @@ def DTD(Tr_K_0,
                 H_C[i],
                 rho[i],
                 c_p[i])
-            flag_t = np.zeros(flag.shape) + F_ALL_FLUXES
+            flag_t = np.zeros(flag.shape, np.int32) + F_ALL_FLUXES
             flag_t[i], T_S[i] = calc_T_S(Tr_K_1[i], T_C[i], f_theta[i])
             flag[flag_t == F_INVALID] = F_INVALID
             LE_S[flag_t == F_INVALID] = 0
@@ -1468,15 +1468,15 @@ def OSEB(Tr_K,
                          calcG_params[1]],
                         [Tr_K] * 12)
     # Create the output variables
-    [flag, Ln, LE, H, G, R_A] = [np.zeros(Tr_K.shape) + np.NaN for i in range(6)]
+    [flag, Ln, LE, H, G, R_A] = [np.zeros(Tr_K.shape, np.float32) + np.NaN for i in range(6)]
 
     # iteration of the Monin-Obukhov length
     if const_L is None:
         # Initially assume stable atmospheric conditions and set variables for
-        L = np.zeros(Tr_K.shape) + np.inf
+        L = np.zeros(Tr_K.shape, np.float32) + np.inf
         max_iterations = ITERATIONS
     else:  # We force Monin-Obukhov lenght to the provided array/value
-        L = np.ones(Tr_K.shape) * const_L
+        L = np.ones(Tr_K.shape, np.float32) * const_L
         max_iterations = 1  # No iteration
 
     # Check if differential temperatures are to be used
@@ -1488,7 +1488,7 @@ def OSEB(Tr_K,
         differentialT = False
 
     # Initially assume stable atmospheric conditions and set variables for
-    L_old = np.ones(Tr_K.shape)
+    L_old = np.ones(Tr_K.shape, np.float32)
     # Calculate the general parameters
     rho = met.calc_rho(p, ea, T_A_K)  # Air density
     c_p = met.calc_c_p(p, ea)  # Heat capacity of air
@@ -1507,8 +1507,8 @@ def OSEB(Tr_K,
     else:
         u_friction = MO.calc_u_star(u, z_u, L, d_0, z_0M)
     u_friction = np.maximum(u_friction_min, u_friction)
-    L_old = np.ones(Tr_K.shape)
-    L_diff = np.ones(Tr_K.shape) * float('inf')
+    L_old = np.ones(Tr_K.shape, np.float32)
+    L_diff = np.ones(Tr_K.shape, np.float32) * float('inf')
 
     z_0H = res.calc_z_0H(z_0M, kB=kB)
 
@@ -1524,7 +1524,7 @@ def OSEB(Tr_K,
     # Stops when difference in consecutive L and u_friction is below a
     # given threshold
     for n_iterations in range(max_iterations):
-        flag = np.zeros(Tr_K.shape) + F_ALL_FLUXES_OS
+        flag = np.zeros(Tr_K.shape, np.int32) + F_ALL_FLUXES_OS
         # Stop the iteration if differences are below the threshold
         if np.all(L_diff < L_thres):
             break
@@ -1544,8 +1544,8 @@ def OSEB(Tr_K,
             H = rho * c_p * ((Tr_K - Tr_K_0) - (T_A_K - T_A_K_0)) / R_A
         else:
             H = rho * c_p * (Tr_K - T_A_K) / R_A
-        H = np.asarray(H)
-        LE = np.asarray(Rn - G - H)
+        H = H
+        LE = Rn - G - H
 
         # Avoid negative ET during daytime and make sure that energy is
         # conserved
@@ -1987,8 +1987,8 @@ def calc_T_C(T_R, T_S, f_theta):
     # Convert input scalars to numpy array
     (T_R, T_S, f_theta) = map(np.asarray, (T_R, T_S, f_theta))
     T_temp = np.asarray(T_R**4 - (1.0 - f_theta) * T_S**4)
-    T_C = np.zeros(T_R.shape)
-    flag = np.zeros(T_R.shape) + F_ALL_FLUXES
+    T_C = np.zeros(T_R.shape, np.float32)
+    flag = np.zeros(T_R.shape, np.int32) + F_ALL_FLUXES
 
     # Succesfull inversion
     T_C[T_temp >= 0] = (T_temp[T_temp >= 0] / f_theta[T_temp >= 0])**0.25
@@ -2357,8 +2357,8 @@ def calc_T_S(T_R, T_C, f_theta):
     Eq. 1 in [Norman1995]_'''
 
     T_temp = T_R**4 - f_theta * T_C**4
-    T_S = np.zeros(T_R.shape)
-    flag = np.zeros(T_R.shape) + F_ALL_FLUXES
+    T_S = np.zeros(T_R.shape, np.float32)
+    flag = np.zeros(T_R.shape, np.int32) + F_ALL_FLUXES
 
     # Succesfull inversion
     T_S[T_temp >= 0] = (T_temp[T_temp >= 0]
@@ -2471,7 +2471,7 @@ def _check_default_parameter_size(parameter, input_array):
 
     parameter = np.asarray(parameter)
     if parameter.size == 1:
-        parameter = np.ones(input_array.shape) * parameter
+        parameter = np.ones(input_array.shape, np.float32) * parameter
         return np.asarray(parameter)
     elif parameter.shape != input_array.shape:
         raise ValueError(
