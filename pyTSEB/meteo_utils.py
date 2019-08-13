@@ -92,7 +92,7 @@ def calc_c_p(p, ea):
     return np.asarray(c_p)
 
 
-@njit(parallel=True)
+@njit("float32[:](float32[:])", parallel=True)
 def calc_lambda(T_A_K):
     '''Calculates the latent heat of vaporization.
 
@@ -111,7 +111,7 @@ def calc_lambda(T_A_K):
     based on Eq. 3-1 Allen FAO98 '''
 
     Lambda = 1e6 * (2.501 - (2.361e-3 * (T_A_K - 273.15)))
-    return Lambda
+    return Lambda.astype(np.float32)
 
 
 def calc_pressure(z):
@@ -131,7 +131,7 @@ def calc_pressure(z):
     return np.asarray(p)
 
 
-@njit(parallel=True)
+@njit("float32[:](float32[:],float32[:],float32[:])", parallel=True)
 def calc_psicr(c_p, p, Lambda):
     ''' Calculates the psicrometric constant.
 
@@ -150,7 +150,7 @@ def calc_psicr(c_p, p, Lambda):
         Psicrometric constant (mb C-1).'''
 
     psicr = c_p * p / (epsilon * Lambda)
-    return psicr
+    return psicr.astype(np.float32)
 
 
 def calc_rho(p, ea, T_A_K):
@@ -179,7 +179,7 @@ def calc_rho(p, ea, T_A_K):
     return np.asarray(rho)
 
 
-@njit(parallel=True)
+@njit("float32[:](float32[:])", parallel=True)
 def calc_stephan_boltzmann(T_K):
     '''Calculates the total energy radiated by a blackbody.
 
@@ -194,7 +194,7 @@ def calc_stephan_boltzmann(T_K):
         Emitted radiance (W m-2)'''
 
     M = sb * T_K**4
-    return M
+    return M.astype(np.float32)
 
 
 def calc_theta_s(xlat, xlong, stdlng, doy, year, ftime):
@@ -336,7 +336,7 @@ def calc_vapor_pressure(T_K):
     return np.asarray(ea)
 
 
-@njit(parallel=True)
+@njit("float32[:](float32[:])", parallel=True)
 def calc_delta_vapor_pressure(T_K):
     """Calculate the slope of saturation water vapour pressure.
 
@@ -353,7 +353,7 @@ def calc_delta_vapor_pressure(T_K):
 
     T_C = T_K - 273.15
     s = 4098.0 * (0.6108 * np.exp(17.27 * T_C / (T_C + 237.3))) / ((T_C + 237.3)**2)
-    return np.asarray(s)
+    return s.astype(np.float32)
 
 
 def calc_mixing_ratio(ea, p):
@@ -402,7 +402,8 @@ def calc_lapse_rate_moist(T_A_K, ea, p):
 
     r = calc_mixing_ratio(ea, p)
     c_p = calc_c_p(p, ea)
-    lambda_v = calc_lambda(T_A_K)
+    # Reshaping is done to comply with numba signature of calc_lambda
+    lambda_v = (calc_lambda(T_A_K.reshape(-1))).reshape(ea.shape)
     Gamma_w = ((g * (R_d * T_A_K**2 + lambda_v * r * T_A_K)
                / (c_p * R_d * T_A_K**2 + lambda_v**2 * r * epsilon)))
     return Gamma_w

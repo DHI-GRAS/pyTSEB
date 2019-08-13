@@ -60,7 +60,8 @@ k = 0.4
 gravity = 9.8
 
 
-@njit(parallel=True)
+@njit("float32[:](float32[:],float32[:],float32[:],float32[:],float32[:],float32[:])",
+      parallel=True)
 def calc_L(ustar, T_A_K, rho, c_p, H, LE):
     '''Calculates the Monin-Obukhov length.
 
@@ -103,7 +104,7 @@ def calc_L(ustar, T_A_K, rho, c_p, H, LE):
     return L
 
 
-@njit(parallel=True)
+@njit("float32[:](float32[:])", parallel=True)
 def calc_Psi_H(zoL):
     ''' Calculates the adiabatic correction factor for heat transport.
 
@@ -141,7 +142,7 @@ def calc_Psi_H(zoL):
     return Psi_H
 
 
-@njit(parallel=True)
+@njit("float32[:](float32[:])", parallel=True)
 def calc_Psi_M(zoL):
     ''' Adiabatic correction factor for momentum transport.
 
@@ -224,7 +225,7 @@ def calc_richardson(u, z_u, d_0, T_R0, T_R1, T_A0, T_A1):
     return np.asarray(Ri)
 
 
-@njit(parallel=True)
+@njit("float32[:](float32[:],float32[:],float32[:],float32[:],float32[:])", parallel=True)
 def calc_u_star(u, z_u, L, d_0, z_0M):
     '''Friction velocity.
 
@@ -252,4 +253,4 @@ def calc_u_star(u, z_u, L, d_0, z_0M):
     Psi_M = calc_Psi_M((z_u - d_0) / L)
     Psi_M0 = calc_Psi_M(z_0M / L)
     u_star = u * k / (np.log((z_u - d_0) / z_0M) - Psi_M + Psi_M0)
-    return u_star
+    return u_star.astype(np.float32)

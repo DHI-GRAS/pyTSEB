@@ -47,19 +47,6 @@ import pyTSEB.meteo_utils as met
 TAUD_STEP_SIZE_DEG = 5
 
 
-@njit(parallel=True)
-def _calc_taud(x_lad, lai):
-
-    taud = np.zeros(lai.shape, np.float32)
-    for angle in range(0, 90, TAUD_STEP_SIZE_DEG):
-        angle = np.radians(angle)
-        akd = calc_K_be_Campbell(angle, x_lad, radians=True)
-        taub = np.exp(-akd * lai)
-        taud += taub * np.cos(angle) * np.sin(angle) * np.radians(TAUD_STEP_SIZE_DEG)
-
-    return 2.0 * taud
-
-
 def calc_difuse_ratio(S_dn, sza, press=1013.25, SOLAR_CONSTANT=1320):
     """Fraction of difuse shortwave radiation.
 
@@ -192,7 +179,8 @@ def calc_longwave_irradiance(ea, t_a_k, p=1013.25, z_T=2.0):
     lapse_rate = met.calc_lapse_rate_moist(t_a_k, ea, p)
     t_a_surface = t_a_k - z_T * lapse_rate
     emisAtm = calc_emiss_atm(ea, t_a_surface)
-    L_dn = emisAtm * met.calc_stephan_boltzmann(t_a_surface)
+    # Reshaping is done to comply with numba signature of calc_stephan_boltzmann
+    L_dn = emisAtm * met.calc_stephan_boltzmann(t_a_surface.reshape(-1)).reshape(t_a_k.shape)
 
     return np.asarray(L_dn)
 
@@ -236,7 +224,7 @@ def calc_K_be_Campbell(theta, x_lad=1, radians=False):
     K_be = (np.sqrt(x_lad**2 + np.tan(theta)**2)
             / (x_lad + 1.774 * (x_lad + 1.182)**-0.733))
 
-    return K_be
+    return K_be.astype(np.float32)
 
 
 def calc_L_n_Kustas(T_C, T_S, L_dn, lai, emisVeg, emisGrd, x_LAD=1):
@@ -430,6 +418,19 @@ def calc_potential_irradiance_weiss(
     Rdirvis, Rdifvis, Rdirnir, Rdifnir = map(
         np.asarray, (Rdirvis, Rdifvis, Rdirnir, Rdifnir))
     return Rdirvis, Rdifvis, Rdirnir, Rdifnir
+
+
+@njit(parallel=True)
+def _calc_taud(x_lad, lai):
+
+    taud = np.zeros(lai.shape, np.float32)
+    for angle in range(0, 90, TAUD_STEP_SIZE_DEG):
+        angle = np.radians(angle)
+        akd = calc_K_be_Campbell(angle, x_lad, radians=True)
+        taub = np.exp(-akd * lai)
+        taud += taub * np.cos(angle) * np.sin(angle) * np.radians(TAUD_STEP_SIZE_DEG)
+
+    return (2.0 * taud).astype(np.float32)
 
 
 def calc_spectra_Cambpell(lai, sza, rho_leaf, tau_leaf, rho_soil, x_lad=1, lai_eff=None):

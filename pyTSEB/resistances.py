@@ -237,7 +237,7 @@ def calc_roughness(LAI, h_C, w_C=1, landcover=CROP, f_c=None):
     return np.asarray(z_0M), np.asarray(d)
 
 
-@njit(parallel=True)
+@njit("float32[:](float32[:],float32[:],float32[:],float32[:],float32[:])", parallel=True)
 def calc_R_A(z_T, ustar, L, d_0, z_0H):
     ''' Estimates the aerodynamic resistance to heat transport based on the
     MO similarity theory.
@@ -436,6 +436,7 @@ def calc_R_S_Haghighi(u, h_C, zm, rho, c_p, z0_soil=0.01, f_cover=0, w_C=1,
     R_S_H = rho * c_p * delta / Ka
 
     return np.asarray(R_S_H), np.asarray(R_S_LE)
+
 
 def calc_R_S_McNaughton(u_friction):
     ''' Aerodynamic resistance at the  soil boundary layer.

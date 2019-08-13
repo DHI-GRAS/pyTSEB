@@ -1771,7 +1771,9 @@ def calc_H_C(T_C, T_A, R_A, rho, c_p):
     H_C = rho * c_p * (T_C - T_A) / R_A
     return np.asarray(H_C)
 
-@njit(parallel=True)
+
+@njit("float32[:](float32[:],float32[:],float32[:],float32[:],float32[:],float32[:])",
+      parallel=True)
 def calc_H_C_PT(delta_R_ni, f_g, T_A_K, P, c_p, alpha):
     '''Calculates canopy sensible heat flux based on the Priestley and Taylor formula.
 
@@ -1809,7 +1811,7 @@ def calc_H_C_PT(delta_R_ni, f_g, T_A_K, P, c_p, alpha):
     gama = met.calc_psicr(c_p, P, Lambda)
     s_gama = s / (s + gama)
     H_C = delta_R_ni * (1.0 - alpha * f_g * s_gama)
-    return H_C
+    return H_C.astype(np.float32)
 
 
 def calc_H_DTD_parallel(
@@ -2000,7 +2002,8 @@ def calc_T_C(T_R, T_S, f_theta):
     return np.asarray(flag), np.asarray(T_C)
 
 
-@njit(parallel=True)
+@njit("float32[:](float32[:],float32[:],float32[:],float32[:],float32[:],float32[:],float32[:],float32[:],float32[:])",
+      parallel=True)
 def calc_T_C_series(Tr_K, T_A_K, R_A, R_x, R_S, f_theta, H_C, rho, c_p):
     '''Estimates canopy temperature from canopy sensible heat flux and
     resistance network in series.
@@ -2050,7 +2053,7 @@ def calc_T_C_series(Tr_K, T_A_K, R_A, R_x, R_S, f_theta, H_C, rho, c_p):
                  + 4.0 * f_theta * T_C_lin**3)))
     # get canopy temperature in Kelvin
     T_C = T_C_lin + delta_T_C
-    return T_C
+    return T_C.astype(np.float32)
 
 
 def calc_T_CS_Norman(F, vza_n, vza_f, T_n, T_f, w_C=1, x_LAD=1, omega0=1):
@@ -2332,7 +2335,7 @@ def calc_4SAIL_emission_param(
     return rdot_star, emiss_v_eff, emiss_s_eff, gamma_sot, emiss_sot
 
 
-@njit
+@njit("Tuple((int32[:],float32[:]))(float32[:],float32[:],float32[:])")
 def calc_T_S(T_R, T_C, f_theta):
     '''Estimates soil temperature from the directional LST.
 
@@ -2368,7 +2371,7 @@ def calc_T_S(T_R, T_C, f_theta):
     T_S[np.logical_or(T_temp < 0, np.isnan(T_temp))] = 1e-6
     flag[np.logical_or(T_temp < 0, np.isnan(T_temp))] = F_INVALID
 
-    return flag, T_S
+    return flag.astype(np.int32), T_S.astype(np.float32)
 
 
 def calc_T_S_4SAIL(T_R, T_C, rdot_star, emiss_v_eff, emiss_s_eff, L_dn=0):
