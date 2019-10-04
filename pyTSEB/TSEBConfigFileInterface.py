@@ -268,7 +268,7 @@ class TSEBConfigFileInterface():
             if is_image:
                 model.process_local_image()
             else:
-                in_data, out_data = model.process_point_series_array()
-                return in_data, out_data
+                print("This version of pyTSEB can only run on images!")
+
         else:
             print("pyTSEB will not be run due to errors in the input data.")
