@@ -30,10 +30,11 @@ PACKAGE CONTENTS
 ================
 * :func:`calc_omega0_Kustas` Nadir viewing clmping factor.
 * :func:`calc_omega_Kustas` Clumping index at an incidence angle.
+* :func:`calc_omega_rows` Clumping index for row crops at an incidence angle.
 """
 
 import numpy as np
-
+from pyTSEB import net_radiation as rad
 
 def calc_omega0_Kustas(LAI, f_C, x_LAD=1, isLAIeff=True):
     ''' Nadir viewing clmping factor
