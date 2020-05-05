@@ -441,8 +441,8 @@ def flux_2_evaporation(flux, t_k=20 + 273.15, time_domain=1):
         evaporation rate at the time_domain. Default mm h-1
     '''
 
-    if not type(T_K) is np.ndarray:
-        T_K = np.array([T_K]).astype(np.float32)
+    if not type(t_k) is np.ndarray:
+        t_k = np.array([t_k]).astype(np.float32)
 
     # Calculate latent heat of vaporization
     lambda_ = calc_lambda(t_k)  # J kg-1
