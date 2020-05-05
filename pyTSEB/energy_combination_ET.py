@@ -443,7 +443,8 @@ def shuttleworth_wallace(T_A_K,
     # Create the output variables
     [flag, vpd_0, T_0, Ln_C, Ln_S, LE, H, LE_C, H_C, LE_S, H_S, G, R_S, R_x, R_A,
      Rn, Rn_C, Rn_S, C_s, C_c, PM_C, PM_S, iterations] = [np.full(T_A_K.shape,
-                                                                  np.NaN)
+                                                                  np.NaN,
+                                                                  np.float32)
                                                           for i in range(23)]
 
     # Calculate the general parameters
