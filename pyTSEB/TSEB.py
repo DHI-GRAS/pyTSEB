@@ -92,8 +92,9 @@ import pyTSEB.wind_profile as wnd
 # ==============================================================================
 # Threshold for relative change in Monin-Obukhov lengh to stop the iterations
 L_thres = 0.001
-# mimimun allowed friction velocity
-u_friction_min = 0.01
+# mimimun allowed wind velocities
+u_friction_min = 0.66
+u_S_min = 0.33
 # Maximum number of interations
 ITERATIONS = 15
 # kB coefficient
@@ -2575,6 +2576,7 @@ def calc_resistances(res_form, res_types):
                 u_C = wnd.calc_u_C_star(u_friction, h_C, d_0, z_0M, L)
             # Clumped vegetation enhanced wind speed for the soil surface
             u_S = wnd.calc_u_Goudriaan(u_C, h_C, omega0 * F, leaf_width, z0_soil)
+            u_S = np.asarray(np.maximum(u_S_min, u_S))
             R_S = res.calc_R_S_Kustas(u_S, deltaT, params=res_params)
 
     elif res_form == CHOUDHURY_MONTEITH_1988:
