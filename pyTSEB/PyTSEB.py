@@ -549,10 +549,9 @@ class PyTSEB(object):
         # ======================================
         # First process bare soil cases
 
-        noVegPixels = in_data['LAI'] <= 0
         noVegPixels = np.logical_or.reduce(
             (in_data['f_c'] <= 0.01,
-             in_data['LAI'] <= 0,
+             in_data['LAI'] <= 0.1,
              np.isnan(in_data['LAI'])))
         # in_data['LAI'][noVegPixels] = 0
         # in_data['f_c'][noVegPixels] = 0
