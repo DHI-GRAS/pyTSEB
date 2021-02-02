@@ -550,7 +550,7 @@ class PyTSEB(object):
 
         noVegPixels = np.logical_or.reduce(
             (in_data['f_c'] <= 0.01,
-             in_data['LAI'] <= 0.1,
+             in_data['LAI'] <= 0.03,
              np.isnan(in_data['LAI'])))
         # in_data['LAI'][noVegPixels] = 0
         # in_data['f_c'][noVegPixels] = 0
