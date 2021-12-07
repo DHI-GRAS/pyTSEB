@@ -24,7 +24,7 @@ F_LOW_TS_TC = 254  # Low Soil and Canopy Temperature flag
 F_LOW_TS = 253  # Low Soil Temperature flag
 F_LOW_TC = 252  # Low Canopy Temperature flag
 T_DIFF_THRES = 0.1
-STABILITY_THRES = -0.01
+STABILITY_THRES = 1e36
 
 
 def penman_monteith(T_A_K,
