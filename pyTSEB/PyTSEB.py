@@ -828,11 +828,10 @@ class PyTSEB(object):
                                                                 self.subset[3]).astype(np.float32)
                 else:
                     array = fid.GetRasterBand(band).ReadAsArray().astype(np.float32)
-                array = (
-                    array
-                    * (fid.GetRasterBand(band).GetScale() or 1)
-                    + (fid.GetRasterBand(band).GetOffset() or 0)
-                )
+                array[array == fid.GetRasterBand(band).GetNoDataValue()] = np.nan
+                scale = (fid.GetRasterBand(band).GetScale() or 1)
+                offset = (fid.GetRasterBand(band).GetOffset() or 0)
+                array = array * scale + offset
             except AttributeError:
                 print("%s image not present for parameter %s" % (inputString, parameter))
                 success = False
