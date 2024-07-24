@@ -828,7 +828,9 @@ class PyTSEB(object):
                                                                 self.subset[3]).astype(np.float32)
                 else:
                     array = fid.GetRasterBand(band).ReadAsArray().astype(np.float32)
-                array[array == fid.GetRasterBand(band).GetNoDataValue()] = np.nan
+                no_data_value = fid.GetRasterBand(band).GetNoDataValue()
+                if no_data_value is not None:
+                    array[array == fid.GetRasterBand(band).GetNoDataValue()] = np.nan
                 scale = (fid.GetRasterBand(band).GetScale() or 1)
                 offset = (fid.GetRasterBand(band).GetOffset() or 0)
                 array = array * scale + offset
